@@ -448,6 +448,7 @@ impl<'a> Unpin for Transfer<'a> {}
 impl<'a> Future for Transfer<'a> {
     type Output = ();
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        #[cfg(feature = "use-wakers")]
         let state: &ChannelState = &STATE[self.channel.id as usize];
 
         #[cfg(feature = "use-wakers")]

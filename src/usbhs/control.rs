@@ -6,7 +6,9 @@ use ch32_metapac::usbhs::vals::{EpRxResponse, EpTog, EpTxResponse, UsbToken};
 use embassy_usb_driver::EndpointError;
 
 use super::endpoint::Endpoint;
-use super::{Instance, EP_WAKERS};
+use super::Instance;
+#[cfg(feature = "use-wakers")]
+use super::EP_WAKERS;
 use crate::usb::InOut;
 
 pub struct ControlPipe<'d, T: Instance, const SIZE: usize> {
@@ -32,6 +34,7 @@ impl<'d, T: Instance, const SIZE: usize> embassy_usb_driver::ControlPipe for Con
 
     async fn setup(&mut self) -> [u8; 8] {
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             EP_WAKERS[0].register(ctx.waker());
             let r = T::regs();
             let d = T::dregs();
@@ -109,6 +112,7 @@ impl<'d, T: Instance, const SIZE: usize> embassy_usb_driver::ControlPipe for Con
                 w.set_mask_uep_r_res(EpRxResponse::ACK);
             });
             poll_fn(|ctx| {
+                #[cfg(feature = "use-wakers")]
                 EP_WAKERS[0].register(ctx.waker());
 
                 let transfer = d.int_fg().read().transfer();

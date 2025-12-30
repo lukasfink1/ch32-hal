@@ -5,7 +5,9 @@ use core::task::Poll;
 use ch32_metapac::usbhs::vals::{EpRxResponse, EpTog, EpTxResponse, UsbToken};
 use embassy_usb_driver::{Direction, EndpointError, EndpointIn, EndpointInfo, EndpointOut, EndpointType};
 
-use super::{EndpointData, Instance, EP_WAKERS};
+use super::{EndpointData, Instance};
+#[cfg(feature = "use-wakers")]
+use super::EP_WAKERS;
 use crate::usb::{Dir, In, Out};
 
 pub struct Endpoint<'d, T: Instance, D: Dir, const SIZE: usize> {
@@ -37,6 +39,7 @@ impl<'d, T: Instance, D: Dir, const SIZE: usize> Endpoint<'d, T, D, SIZE> {
 
     async fn wait_enabled_internal(&mut self) {
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             EP_WAKERS[self.info.addr.index() as usize].register(ctx.waker());
             if self.is_enabled() {
                 Poll::Ready(())
@@ -60,6 +63,7 @@ impl<'d, T: Instance, D: Dir, const SIZE: usize> Endpoint<'d, T, D, SIZE> {
         let index = self.info.addr.index();
 
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[index].register(ctx.waker());
 
             let transfer = d.int_fg().read().transfer();
@@ -120,6 +124,7 @@ impl<'d, T: Instance, D: Dir, const SIZE: usize> Endpoint<'d, T, D, SIZE> {
         let index = self.info.addr.index();
 
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             EP_WAKERS[index].register(ctx.waker());
 
             let transfer = d.int_fg().read().transfer();

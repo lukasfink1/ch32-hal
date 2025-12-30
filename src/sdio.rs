@@ -7,6 +7,7 @@ use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::task::Poll;
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use sdio_host::{BusWidth, CardCapacity, CardStatus, CurrentState, SDStatus, CID, CSD, OCR, SCR};
 
@@ -42,6 +43,7 @@ impl<T: Instance> InterruptHandler<T> {
 impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandler<T> {
     unsafe fn on_interrupt() {
         Self::data_interrupts(false);
+        #[cfg(feature = "use-wakers")]
         T::state().wake();
     }
 }
@@ -557,6 +559,7 @@ impl<'d, T: Instance, Dma: SdioDma<T> + 'd> Sdmmc<'d, T, Dma> {
         Self::cmd(Cmd::cmd6(set_function), true)?; // CMD6
 
         let res = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             T::state().register(cx.waker());
             let status = regs.sta().read();
 
@@ -638,6 +641,7 @@ impl<'d, T: Instance, Dma: SdioDma<T> + 'd> Sdmmc<'d, T, Dma> {
         Self::cmd(Cmd::card_status(0), true)?;
 
         let res = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             T::state().register(cx.waker());
             let status = regs.sta().read();
 
@@ -724,6 +728,7 @@ impl<'d, T: Instance, Dma: SdioDma<T> + 'd> Sdmmc<'d, T, Dma> {
         Self::cmd(Cmd::cmd51(), true)?;
 
         let res = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             T::state().register(cx.waker());
             let status = regs.sta().read();
 
@@ -1005,6 +1010,7 @@ impl<'d, T: Instance, Dma: SdioDma<T> + 'd> Sdmmc<'d, T, Dma> {
         Self::cmd(Cmd::read_single_block(address), true)?;
 
         let res = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             T::state().register(cx.waker());
             let status = regs.sta().read();
 
@@ -1060,6 +1066,7 @@ impl<'d, T: Instance, Dma: SdioDma<T> + 'd> Sdmmc<'d, T, Dma> {
         InterruptHandler::<T>::data_interrupts(true);
 
         let res = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             T::state().register(cx.waker());
             let status = regs.sta().read();
 
@@ -1235,6 +1242,7 @@ impl Cmd {
 
 trait SealedInstance {
     fn regs() -> RegBlock;
+    #[cfg(feature = "use-wakers")]
     fn state() -> &'static AtomicWaker;
 }
 
@@ -1266,6 +1274,7 @@ foreach_peripheral!(
                 crate::pac::$inst
             }
 
+            #[cfg(feature = "use-wakers")]
             fn state() -> &'static ::embassy_sync::waitqueue::AtomicWaker {
                 static WAKER: ::embassy_sync::waitqueue::AtomicWaker = ::embassy_sync::waitqueue::AtomicWaker::new();
                 &WAKER

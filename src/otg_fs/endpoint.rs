@@ -5,7 +5,9 @@ use ch32_metapac::otg::vals::{EpRxResponse, EpTxResponse, UsbToken};
 use embassy_usb_driver::{Direction, EndpointError, EndpointInfo};
 use futures::future::poll_fn;
 
-use super::{Instance, EP_MAX_PACKET_SIZE, EP_WAKERS};
+use super::{Instance, EP_MAX_PACKET_SIZE};
+#[cfg(feature = "use-wakers")]
+use super::EP_WAKERS;
 use crate::interrupt::typelevel::Interrupt;
 use crate::usb::{Dir, EndpointData, In, Out};
 
@@ -30,6 +32,7 @@ impl<'d, T: Instance, D: Dir, const SIZE: usize> Endpoint<'d, T, D, SIZE> {
 
     async fn wait_enabled_internal(&mut self) {
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             EP_WAKERS[self.info.addr.index() as usize].register(ctx.waker());
             if self.is_enabled() {
                 Poll::Ready(())
@@ -98,6 +101,7 @@ impl<'d, T: Instance, const SIZE: usize> embassy_usb_driver::EndpointIn for Endp
 
         // Wait for TX complete
         let tx_result = poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[ep].register(ctx.waker());
 
             let ret = if regs.int_fg().read().transfer() {
@@ -153,6 +157,7 @@ impl<'d, T: Instance, const SIZE: usize> embassy_usb_driver::EndpointOut for End
 
         // poll for packet
         let bytes_read = poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[ep].register(ctx.waker());
 
             let ret = if regs.int_fg().read().transfer() {
@@ -216,6 +221,7 @@ where
 
     async fn setup(&mut self) -> [u8; 8] {
         poll_fn(move |ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[0].register(ctx.waker());
             let poll_result = {
                 let regs = T::regs();
@@ -271,6 +277,7 @@ where
 
         // poll for packet
         let bytes_read = poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[0].register(ctx.waker());
 
             let ret = if regs.int_fg().read().transfer() {
@@ -329,6 +336,7 @@ where
 
         // Poll for last packet to finsh transfer
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[0].register(ctx.waker());
             let poll_result = {
                 let interrupt_flags = regs.int_fg().read();
@@ -371,6 +379,7 @@ where
 
             // Expect the empty OUT token for status
             poll_fn(|ctx| {
+                #[cfg(feature = "use-wakers")]
                 super::EP_WAKERS[0].register(ctx.waker());
 
                 let poll_res = if regs.int_fg().read().transfer() {
@@ -425,6 +434,7 @@ where
         });
 
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             super::EP_WAKERS[0].register(ctx.waker());
 
             let res = if regs.int_fg().read().transfer() {

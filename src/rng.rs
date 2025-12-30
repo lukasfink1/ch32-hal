@@ -5,12 +5,14 @@ use core::future::poll_fn;
 use core::marker::PhantomData;
 use core::task::Poll;
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::interrupt::typelevel::Interrupt;
 use crate::{interrupt, pac, peripherals, Peri};
 
+#[cfg(feature = "use-wakers")]
 static RNG_WAKER: AtomicWaker = AtomicWaker::new();
 
 /// RNG error
@@ -35,6 +37,7 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
         let bits = T::regs().sr().read();
         if bits.drdy() || bits.seis() || bits.ceis() {
             T::regs().cr().modify(|reg| reg.set_ie(false));
+            #[cfg(feature = "use-wakers")]
             RNG_WAKER.wake();
         }
     }
@@ -101,6 +104,7 @@ impl<'d, T: Instance> Rng<'d, T> {
                     if bits.drdy() || bits.seis() || bits.ceis() {
                         return Poll::Ready(());
                     }
+                    #[cfg(feature = "use-wakers")]
                     RNG_WAKER.register(cx.waker());
                     T::regs().cr().modify(|reg| reg.set_ie(true));
                     // Need to check condition **after** `register` to avoid a race

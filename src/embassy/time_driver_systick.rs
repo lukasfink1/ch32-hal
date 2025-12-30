@@ -20,6 +20,7 @@ fn SysTick() {
 
 pub struct SystickDriver {
     cnt_per_tick: AtomicU32,
+    #[cfg(not(feature = "use-wakers"))]
     queue: Mutex<CriticalSectionRawMutex, RefCell<Queue>>,
 }
 
@@ -116,6 +117,7 @@ impl Driver for SystickDriver {
         self.raw_cnt() / cnt_per_tick
     }
 
+    #[cfg(feature = "use-wakers")]
     fn schedule_wake(&self, ticks: u64, waker: &core::task::Waker) {
         let cnt_per_tick = self.cnt_per_tick.load(Ordering::Relaxed) as u64;
         critical_section::with(|cs| {
@@ -129,6 +131,9 @@ impl Driver for SystickDriver {
             }
         })
     }
+
+    #[cfg(not(feature = "use-wakers"))]
+    fn schedule_wake(&self, ticks: u64, waker: &core::task::Waker) {}
 }
 
 pub(crate) fn init(cs: CriticalSection) {

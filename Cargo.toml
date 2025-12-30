@@ -17,7 +17,7 @@ ch32-metapac = { features = [
     "rt",
 ], git = "https://github.com/ch32-rs/ch32-metapac", rev = "b1cbc7a98e43af3fd3170821654784e2c01cb26b" }
 
-qingke = { version = "0.6.1", features = ["critical-section-impl"] }
+qingke = { version = "0.6.1", features = ["critical-section-impl", "unsafe-trust-wch-atomics"] }
 qingke-rt = { version = "0.6.1", optional = true }
 
 # TODO: remove this

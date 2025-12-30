@@ -38,6 +38,7 @@ use bitmaps::Bitmap;
 use ch32_metapac::usbhs::regs::{EpBufMod, EpConfig, EpType};
 use ch32_metapac::usbhs::vals::{EpRxResponse, EpTog, EpTxResponse, SpeedType, UsbToken};
 use control::ControlPipe;
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use embassy_usb_driver::{
     Direction, EndpointAddress, EndpointAllocError, EndpointInfo, EndpointType, Event, Unsupported,
@@ -55,8 +56,11 @@ mod endpoint;
 const MAX_NR_EP: usize = 16;
 const EP_MAX_PACKET_SIZE: u16 = 64;
 
+#[cfg(feature = "use-wakers")]
 const NEW_AW: AtomicWaker = AtomicWaker::new();
+#[cfg(feature = "use-wakers")]
 static BUS_WAKER: AtomicWaker = NEW_AW;
+#[cfg(feature = "use-wakers")]
 static EP_WAKERS: [AtomicWaker; MAX_NR_EP] = [NEW_AW; MAX_NR_EP];
 
 pub struct InterruptHandler<T: Instance> {
@@ -73,16 +77,19 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
         if flag.bus_rst() {
             //mask the interrupt and let the main thread handle it
             r.int_en().modify(|w| w.set_bus_rst(false));
+            #[cfg(feature = "use-wakers")]
             BUS_WAKER.wake();
         };
         if flag.suspend() {
             //mask the interrupt and let the main thread handle it
             r.int_en().modify(|w| w.set_suspend(false));
+            #[cfg(feature = "use-wakers")]
             BUS_WAKER.wake();
         };
         if flag.setup_act() {
             //mask the interrupt and let the main thread handle it
             r.int_en().modify(|w| w.set_setup_act(false));
+            #[cfg(feature = "use-wakers")]
             EP_WAKERS[0].wake();
         };
         if flag.transfer() {
@@ -91,6 +98,7 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
             match status.token() {
                 UsbToken::OUT => {
                     if status.tog_ok() {
+                        #[cfg(feature = "use-wakers")]
                         EP_WAKERS[status.endp() as usize].wake();
                         r.int_en().modify(|w| w.set_transfer(false));
                     } else {
@@ -99,6 +107,7 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
                     }
                 }
                 UsbToken::IN => {
+                    #[cfg(feature = "use-wakers")]
                     EP_WAKERS[status.endp() as usize].wake();
                     r.int_en().modify(|w| w.set_transfer(false));
                 }
@@ -356,6 +365,7 @@ impl<'d, T: Instance> embassy_usb_driver::Bus for Bus<'d, T> {
             return Event::PowerDetected;
         }
         poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             BUS_WAKER.register(cx.waker());
 
             let r = T::regs();
@@ -407,6 +417,7 @@ impl<'d, T: Instance> embassy_usb_driver::Bus for Bus<'d, T> {
                 });
             }
         });
+        #[cfg(feature = "use-wakers")]
         EP_WAKERS[ep_addr.index()].wake();
     }
 

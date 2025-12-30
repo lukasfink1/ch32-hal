@@ -31,6 +31,7 @@ use core::task::Poll;
 
 use bitmaps::Bitmap;
 use ch32_metapac::otg::vals::{EpRxResponse, EpTxResponse, UsbToken};
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use embassy_usb_driver::{Direction, EndpointAddress, EndpointInfo, EndpointType, Event};
 use endpoint::{ControlPipe, Endpoint};
@@ -46,8 +47,11 @@ pub mod endpoint;
 const MAX_NR_EP: usize = 8;
 const EP_MAX_PACKET_SIZE: u16 = 64;
 
+#[cfg(feature = "use-wakers")]
 const NEW_AW: AtomicWaker = AtomicWaker::new();
+#[cfg(feature = "use-wakers")]
 static BUS_WAKER: AtomicWaker = NEW_AW;
+#[cfg(feature = "use-wakers")]
 static EP_WAKERS: [AtomicWaker; MAX_NR_EP] = [NEW_AW; MAX_NR_EP];
 
 pub struct InterruptHandler<T: Instance> {
@@ -69,6 +73,7 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
 
             // Bus stuff we wakup bus
             if int_fg.bus_rst() || int_fg.suspend() {
+                #[cfg(feature = "use-wakers")]
                 BUS_WAKER.wake();
             }
 
@@ -83,10 +88,12 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
                         if ep as usize >= MAX_NR_EP {
                             error!("[USBFS] Unexpected EP: {} got token: {:#x}", ep, token.to_bits());
                         } else {
+                            #[cfg(feature = "use-wakers")]
                             EP_WAKERS[ep as usize].wake();
                         }
                     }
                     UsbToken::SETUP => {
+                        #[cfg(feature = "use-wakers")]
                         EP_WAKERS[0].wake();
                     }
                     UsbToken::RSVD => panic!("rsvd token"),
@@ -346,6 +353,7 @@ where
         }
 
         poll_fn(|ctx| {
+            #[cfg(feature = "use-wakers")]
             BUS_WAKER.register(ctx.waker());
 
             let poll_res = {
@@ -445,6 +453,7 @@ where
                 panic!()
             }
         }
+        #[cfg(feature = "use-wakers")]
         EP_WAKERS[ep_addr.index() as usize].wake();
     }
 

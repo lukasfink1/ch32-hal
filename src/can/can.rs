@@ -2,6 +2,7 @@ use core::future::poll_fn;
 use core::marker::PhantomData;
 use core::task::Poll;
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 
 use super::enums::*;
@@ -21,6 +22,7 @@ pub struct ReceiveInterruptHandler<T: Instance> {
 impl<T: Instance> interrupt::typelevel::Handler<T::ReceiveInterrupt> for ReceiveInterruptHandler<T> {
     unsafe fn on_interrupt() {
         let regs = &T::regs();
+        #[cfg(feature = "use-wakers")]
         T::state().waker.wake();
         critical_section::with(|_| {
             regs.intenr().modify(|w| {
@@ -84,6 +86,7 @@ impl<'d, T: Instance> Can<'d, T, Async> {
             })
         });
         poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             T::state().waker.register(cx.waker());
 
             let regs = Registers::new::<T>();
@@ -371,11 +374,13 @@ where
     }
 }
 
+#[cfg(feature = "use-wakers")]
 struct State {
     #[allow(unused)]
     waker: AtomicWaker,
 }
 
+#[cfg(feature = "use-wakers")]
 impl State {
     const fn new() -> Self {
         Self {
@@ -389,6 +394,7 @@ pub trait SealedInstance: RccPeripheral + RemapPeripheral {
     // Either `0b00`, `0b10` or `b11` on CAN1. `0` or `1` on CAN2.
     // fn remap(rm: u8) -> ();
 
+    #[cfg(feature = "use-wakers")]
     fn state() -> &'static State;
 }
 
@@ -410,6 +416,7 @@ foreach_peripheral!(
                 return crate::pac::$inst;
             }
 
+            #[cfg(feature = "use-wakers")]
             fn state() -> &'static State {
                 static STATE: State = State::new();
                 &STATE
