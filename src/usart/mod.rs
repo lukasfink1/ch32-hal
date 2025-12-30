@@ -16,6 +16,7 @@ use core::marker::PhantomData;
 use core::sync::atomic::{compiler_fence, Ordering};
 use core::task::Poll;
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use futures::future::{select, Either};
 
@@ -35,6 +36,7 @@ pub struct InterruptHandler<T: Instance> {
 impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandler<T> {
     unsafe fn on_interrupt() {
         let r = T::regs();
+        #[cfg(feature = "use-wakers")]
         let s = T::state();
 
         let (sr, cr1, cr3) = (r.statr().read(), r.ctlr1().read(), r.ctlr3().read());
@@ -71,6 +73,7 @@ impl<T: Instance> interrupt::typelevel::Handler<T::Interrupt> for InterruptHandl
         }
 
         compiler_fence(Ordering::SeqCst);
+        #[cfg(feature = "use-wakers")]
         s.rx_waker.wake();
     }
 }
@@ -199,6 +202,7 @@ impl<'d, T: Instance, M: Mode> UartTx<'d, T, M> {
         configure(&rb, &config, T::frequency(), true, false)?;
 
         // create state once!
+        #[cfg(feature = "use-wakers")]
         let _s = T::state();
 
         Ok(Self {
@@ -341,6 +345,7 @@ impl<'d, T: Instance, M: Mode> UartRx<'d, T, M> {
         unsafe { T::Interrupt::enable() };
 
         // create state once!
+        #[cfg(feature = "use-wakers")]
         let _s = T::state();
 
         Ok(Self {
@@ -575,8 +580,10 @@ impl<'d, T: Instance> UartRx<'d, T, Async> {
 
         // future which completes when idle line or error is detected
         let abort = poll_fn(move |cx| {
+            #[cfg(feature = "use-wakers")]
             let s = T::state();
 
+            #[cfg(feature = "use-wakers")]
             s.rx_waker.register(cx.waker());
 
             let sr = r.statr().read();
@@ -758,6 +765,7 @@ impl<'d, T: Instance, M: Mode> Uart<'d, T, M> {
         unsafe { T::Interrupt::enable() };
 
         // create state once!
+        #[cfg(feature = "use-wakers")]
         let _s = T::state();
 
         Ok(Self {
@@ -1014,10 +1022,12 @@ impl<'d, T: Instance> core::fmt::Write for Uart<'d, T, Blocking> {
 }
 
 // Peripheral traits
+#[cfg(feature = "use-wakers")]
 struct State {
     rx_waker: AtomicWaker,
 }
 
+#[cfg(feature = "use-wakers")]
 impl State {
     const fn new() -> Self {
         Self {
@@ -1028,6 +1038,7 @@ impl State {
 
 trait SealedInstance: crate::peripheral::RccPeripheral + crate::peripheral::RemapPeripheral {
     fn regs() -> crate::pac::usart::Usart;
+    #[cfg(feature = "use-wakers")]
     fn state() -> &'static State;
 
     // fn buffered_state() -> &'static buffered::State;
@@ -1046,6 +1057,7 @@ foreach_peripheral!(
                 crate::pac::$inst
             }
 
+            #[cfg(feature = "use-wakers")]
             fn state() -> &'static State {
                 static STATE: State = State::new();
                 &STATE

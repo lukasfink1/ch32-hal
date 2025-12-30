@@ -3,6 +3,7 @@ use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use qingke_rt::interrupt;
 
@@ -10,7 +11,9 @@ use crate::gpio::{AnyPin, Input, Level, Pin as GpioPin, Pull};
 use crate::{impl_peripheral, peripherals, Peri};
 
 const EXTI_COUNT: usize = 24;
+#[cfg(feature = "use-wakers")]
 const NEW_AW: AtomicWaker = AtomicWaker::new();
+#[cfg(feature = "use-wakers")]
 static EXTI_WAKERS: [AtomicWaker; EXTI_COUNT] = [NEW_AW; EXTI_COUNT];
 
 pub unsafe fn on_irq() {
@@ -27,6 +30,7 @@ pub unsafe fn on_irq() {
     exti.intenr().modify(|w| w.0 = w.0 & !bits);
 
     // Wake the tasks
+    #[cfg(feature = "use-wakers")]
     for pin in BitIter(bits) {
         EXTI_WAKERS[pin as usize].wake();
     }
@@ -180,6 +184,7 @@ impl<'a> Future for ExtiInputFuture<'a> {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let exti = &crate::pac::EXTI;
 
+        #[cfg(feature = "use-wakers")]
         EXTI_WAKERS[self.pin as usize].register(cx.waker());
 
         if exti.intenr().read().mr(self.pin as _) == false {

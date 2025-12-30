@@ -4,6 +4,7 @@
 
 use core::marker::PhantomData;
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 
 use crate::pac::adc::vals;
@@ -39,9 +40,11 @@ impl Default for Config {
     }
 }
 
+#[cfg(feature = "use-wakers")]
 pub struct State {
     pub waker: AtomicWaker,
 }
+#[cfg(feature = "use-wakers")]
 impl State {
     pub const fn new() -> Self {
         Self {
@@ -137,6 +140,7 @@ impl<'d, T: Instance> Adc<'d, T> {
 #[allow(unused)]
 trait SealedInstance {
     fn regs() -> crate::pac::adc::Adc;
+    #[cfg(feature = "use-wakers")]
     fn state() -> &'static State;
 }
 
@@ -188,6 +192,7 @@ foreach_peripheral!(
                 crate::pac::$inst
             }
 
+            #[cfg(feature = "use-wakers")]
             fn state() -> &'static State {
                 static STATE: State = State::new();
                 &STATE

@@ -3,7 +3,9 @@
 use core::future::poll_fn;
 use core::ops::Range;
 use core::sync::atomic::{compiler_fence, Ordering};
-use core::task::{Poll, Waker};
+use core::task::Poll;
+#[cfg(feature = "use-wakers")]
+use core::task::Waker;
 
 use super::word::Word;
 
@@ -54,6 +56,7 @@ pub trait DmaCtrl {
     fn reset_complete_count(&mut self) -> usize;
 
     /// Set the waker for a running poll_fn
+    #[cfg(feature = "use-wakers")]
     fn set_waker(&mut self, waker: &Waker);
 }
 
@@ -94,6 +97,7 @@ impl<'a, W: Word> ReadableDmaRingBuffer<'a, W> {
         let buffer_len = buffer.len();
 
         poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             dma.set_waker(cx.waker());
 
             compiler_fence(Ordering::SeqCst);
@@ -281,6 +285,7 @@ impl<'a, W: Word> WritableDmaRingBuffer<'a, W> {
         let buffer_len = buffer.len();
 
         poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             dma.set_waker(cx.waker());
 
             compiler_fence(Ordering::SeqCst);
@@ -426,6 +431,7 @@ mod tests {
             }
         }
 
+        #[cfg(feature = "use-wakers")]
         fn set_waker(&mut self, waker: &Waker) {}
     }
 

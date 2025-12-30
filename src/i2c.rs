@@ -5,6 +5,7 @@ use core::marker::PhantomData;
 use core::task::Poll;
 
 use embassy_futures::select::{select, Either};
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 use embedded_hal::i2c::Operation;
 
@@ -42,6 +43,7 @@ pub unsafe fn on_interrupt<T: Instance>() {
     let regs = T::regs();
     // i2c v2 only woke the task on transfer complete interrupts. v1 uses interrupts for a bunch of
     // other stuff, so we wake the task on every interrupt.
+    #[cfg(feature = "use-wakers")]
     T::state().waker.wake();
     critical_section::with(|_| {
         // Clear event interrupt flag.
@@ -503,6 +505,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
             })
         });
 
+        #[cfg(feature = "use-wakers")]
         let state = T::state();
 
         if frame.send_start() {
@@ -513,6 +516,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
 
             // Wait until START condition was generated
             poll_fn(|cx| {
+                #[cfg(feature = "use-wakers")]
                 state.waker.register(cx.waker());
 
                 match Self::check_and_clear_error_flags() {
@@ -540,6 +544,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
 
             // Wait for the address to be acknowledged
             poll_fn(|cx| {
+                #[cfg(feature = "use-wakers")]
                 state.waker.register(cx.waker());
 
                 match Self::check_and_clear_error_flags() {
@@ -571,6 +576,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
 
         // Wait for bytes to be sent, or an error to occur.
         let poll_error = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             state.waker.register(cx.waker());
 
             match Self::check_and_clear_error_flags() {
@@ -599,6 +605,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
             // 18.3.8 “Master transmitter: In the interrupt routine after the EOT interrupt, disable DMA
             // requests then wait for a BTF event before programming the Stop condition.”
             poll_fn(|cx| {
+                #[cfg(feature = "use-wakers")]
                 state.waker.register(cx.waker());
 
                 match Self::check_and_clear_error_flags() {
@@ -674,6 +681,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
             })
         });
 
+        #[cfg(feature = "use-wakers")]
         let state = T::state();
 
         if frame.send_start() {
@@ -685,6 +693,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
 
             // Wait until START condition was generated
             poll_fn(|cx| {
+                #[cfg(feature = "use-wakers")]
                 state.waker.register(cx.waker());
 
                 match Self::check_and_clear_error_flags() {
@@ -712,6 +721,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
 
             // Wait for the address to be acknowledged
             poll_fn(|cx| {
+                #[cfg(feature = "use-wakers")]
                 state.waker.register(cx.waker());
 
                 match Self::check_and_clear_error_flags() {
@@ -768,6 +778,7 @@ impl<'d, T: Instance> I2c<'d, T, Async> {
 
         // Wait for bytes to be received, or an error to occur.
         let poll_error = poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             state.waker.register(cx.waker());
 
             match Self::check_and_clear_error_flags() {
@@ -838,11 +849,13 @@ impl<'d, T: Instance, M: Mode> Drop for I2c<'d, T, M> {
     }
 }
 
+#[cfg(feature = "use-wakers")]
 struct State {
     #[allow(unused)]
     waker: AtomicWaker,
 }
 
+#[cfg(feature = "use-wakers")]
 impl State {
     const fn new() -> Self {
         Self {
@@ -853,6 +866,7 @@ impl State {
 
 trait SealedInstance: crate::peripheral::RccPeripheral + crate::peripheral::RemapPeripheral {
     fn regs() -> crate::pac::i2c::I2c;
+    #[cfg(feature = "use-wakers")]
     fn state() -> &'static State;
 }
 
@@ -872,6 +886,7 @@ foreach_peripheral!(
                 crate::pac::$inst
             }
 
+            #[cfg(feature = "use-wakers")]
             fn state() -> &'static State {
                 static STATE: State = State::new();
                 &STATE

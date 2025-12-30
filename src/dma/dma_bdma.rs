@@ -1,8 +1,11 @@
 use core::future::{poll_fn, Future};
 use core::pin::Pin;
 use core::sync::atomic::{compiler_fence, fence, AtomicUsize, Ordering};
-use core::task::{Context, Poll, Waker};
+use core::task::{Context, Poll};
+#[cfg(feature = "use-wakers")]
+use core::task::Waker;
 
+#[cfg(feature = "use-wakers")]
 use embassy_sync::waitqueue::AtomicWaker;
 
 use super::ringbuffer::{DmaCtrl, OverrunError, ReadableDmaRingBuffer, WritableDmaRingBuffer};
@@ -102,12 +105,14 @@ mod bdma_only {
 }
 
 pub(crate) struct ChannelState {
+    #[cfg(feature = "use-wakers")]
     waker: AtomicWaker,
     complete_count: AtomicUsize,
 }
 
 impl ChannelState {
     pub(crate) const NEW: Self = Self {
+        #[cfg(feature = "use-wakers")]
         waker: AtomicWaker::new(),
         complete_count: AtomicUsize::new(0),
     };
@@ -154,6 +159,7 @@ impl AnyChannel {
                     return;
                 }
 
+                #[cfg(feature = "use-wakers")]
                 state.waker.wake();
             }
         }
@@ -444,6 +450,7 @@ impl<'a> Future for Transfer<'a> {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let state: &ChannelState = &STATE[self.channel.id as usize];
 
+        #[cfg(feature = "use-wakers")]
         state.waker.register(cx.waker());
 
         if self.is_running() {
@@ -476,6 +483,7 @@ impl<'a> DmaCtrl for DmaCtrlImpl<'a> {
         })
     }
 
+    #[cfg(feature = "use-wakers")]
     fn set_waker(&mut self, waker: &Waker) {
         STATE[self.0.id as usize].waker.register(waker);
     }
@@ -567,6 +575,7 @@ impl<'a, W: Word> ReadableRingBuffer<'a, W> {
     }
 
     /// Set a waker to be woken when at least one byte is received.
+    #[cfg(feature = "use-wakers")]
     pub fn set_waker(&mut self, waker: &Waker) {
         DmaCtrlImpl(self.channel.reborrow()).set_waker(waker);
     }
@@ -599,6 +608,7 @@ impl<'a, W: Word> ReadableRingBuffer<'a, W> {
         self.channel.disable_circular_mode();
         //wait until cr.susp reads as true
         poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             self.set_waker(cx.waker());
             self.channel.poll_stop()
         })
@@ -696,6 +706,7 @@ impl<'a, W: Word> WritableRingBuffer<'a, W> {
     }
 
     /// Set a waker to be woken when at least one byte is received.
+    #[cfg(feature = "use-wakers")]
     pub fn set_waker(&mut self, waker: &Waker) {
         DmaCtrlImpl(self.channel.reborrow()).set_waker(waker);
     }
@@ -726,6 +737,7 @@ impl<'a, W: Word> WritableRingBuffer<'a, W> {
         self.channel.disable_circular_mode();
         //wait until cr.susp reads as true
         poll_fn(|cx| {
+            #[cfg(feature = "use-wakers")]
             self.set_waker(cx.waker());
             self.channel.poll_stop()
         })
