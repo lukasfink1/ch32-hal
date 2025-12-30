@@ -58,7 +58,7 @@ proc-macro2 = "1.0"
 quote = "1.0"
 
 [features]
-default = ["embassy", "rt"]
+default = ["embassy", "rt", "use-wakers"]
 rt = ["dep:qingke-rt", "rt-wfi"]
 highcode = ["qingke-rt/highcode"]
 embassy = [
@@ -68,6 +68,7 @@ embassy = [
 ]
 defmt = ["dep:defmt"]
 memory-x = ["ch32-metapac/memory-x"]
+use-wakers = []
 
 
 # Features starting with `_` are for internal use only. They're not intended
