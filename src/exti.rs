@@ -3,10 +3,10 @@ use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 
-use embassy_sync::waitqueue::AtomicWaker;
 use qingke_rt::interrupt;
 
 use crate::gpio::{AnyPin, Input, Level, Pin as GpioPin, Pull};
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::{impl_peripheral, peripherals, Peri};
 
 const EXTI_COUNT: usize = 24;

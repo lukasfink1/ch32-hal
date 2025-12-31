@@ -2,14 +2,13 @@ use core::future::poll_fn;
 use core::marker::PhantomData;
 use core::task::Poll;
 
-use embassy_sync::waitqueue::AtomicWaker;
-
 use super::enums::*;
 use super::filter::{BitMode, FilterMode};
 use super::{CanFilter, CanFrame};
 use crate::can::registers::Registers;
 use crate::can::util;
 use crate::internal::drop::OnDrop;
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::mode::{Async, Blocking, Mode, NonBlocking};
 use crate::{interrupt, pac, peripherals, Peri, RccPeripheral, RemapPeripheral, Timeout};
 

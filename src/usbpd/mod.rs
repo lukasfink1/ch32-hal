@@ -13,10 +13,10 @@ use core::marker::PhantomData;
 use core::sync::atomic::AtomicBool;
 use core::task::Poll;
 
-use embassy_sync::waitqueue::AtomicWaker;
 use pac::InterruptNumber;
 
 use crate::gpio::Pull;
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::pac::usbpd::vals;
 use crate::{interrupt, pac, println, Peri, PeripheralType, RccPeripheral};
 

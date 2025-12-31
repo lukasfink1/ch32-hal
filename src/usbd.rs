@@ -9,13 +9,13 @@ use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
 use core::task::Poll;
 
-use embassy_sync::waitqueue::AtomicWaker;
 use embassy_usb_driver as driver;
 use embassy_usb_driver::{
     Direction, EndpointAddress, EndpointAllocError, EndpointError, EndpointInfo, EndpointType, Event, Unsupported,
 };
 
 use crate::gpio::Speed;
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::pac::usbd::regs;
 use crate::pac::usbd::vals::{EpType, Stat};
 use crate::pac::{EXTEND, USBRAM};

@@ -4,8 +4,7 @@
 
 use core::marker::PhantomData;
 
-use embassy_sync::waitqueue::AtomicWaker;
-
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::pac::adc::vals;
 pub use crate::pac::adc::vals::SampleTime;
 use crate::{peripherals, Peri};

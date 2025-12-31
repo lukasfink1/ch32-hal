@@ -38,13 +38,13 @@ use bitmaps::Bitmap;
 use ch32_metapac::usbhs::regs::{EpBufMod, EpConfig, EpType};
 use ch32_metapac::usbhs::vals::{EpRxResponse, EpTog, EpTxResponse, SpeedType, UsbToken};
 use control::ControlPipe;
-use embassy_sync::waitqueue::AtomicWaker;
 use embassy_usb_driver::{
     Direction, EndpointAddress, EndpointAllocError, EndpointInfo, EndpointType, Event, Unsupported,
 };
 use endpoint::Endpoint;
 
 use crate::gpio::{AFType, Speed};
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::interrupt::typelevel::Interrupt;
 use crate::usb::{Dir, EndpointBufferAllocator, EndpointData, EndpointDataBuffer, In, Out};
 use crate::{interrupt, Peri, PeripheralType};

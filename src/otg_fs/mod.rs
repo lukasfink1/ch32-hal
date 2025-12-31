@@ -31,11 +31,11 @@ use core::task::Poll;
 
 use bitmaps::Bitmap;
 use ch32_metapac::otg::vals::{EpRxResponse, EpTxResponse, UsbToken};
-use embassy_sync::waitqueue::AtomicWaker;
 use embassy_usb_driver::{Direction, EndpointAddress, EndpointInfo, EndpointType, Event};
 use endpoint::{ControlPipe, Endpoint};
 
 use crate::gpio::{AFType, Speed};
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::interrupt::typelevel::Interrupt;
 use crate::usb::{Dir, EndpointBufferAllocator, EndpointDataBuffer, In, Out};
 use crate::{interrupt, peripherals, Peri, PeripheralType, RccPeripheral};

@@ -5,12 +5,12 @@ use core::marker::PhantomData;
 use core::task::Poll;
 
 use embassy_futures::select::{select, Either};
-use embassy_sync::waitqueue::AtomicWaker;
 use embedded_hal::i2c::Operation;
 
 use crate::dma::ChannelAndRequest;
 use crate::gpio::{AFType, Speed};
 use crate::internal::drop::OnDrop;
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::mode::{Async, Blocking, Mode};
 // use crate::interrupt::Interrupt;
 use crate::time::Hertz;

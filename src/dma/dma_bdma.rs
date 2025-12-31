@@ -3,11 +3,10 @@ use core::pin::Pin;
 use core::sync::atomic::{compiler_fence, fence, AtomicUsize, Ordering};
 use core::task::{Context, Poll, Waker};
 
-use embassy_sync::waitqueue::AtomicWaker;
-
 use super::ringbuffer::{DmaCtrl, OverrunError, ReadableDmaRingBuffer, WritableDmaRingBuffer};
 use super::word::{Word, WordSize};
 use super::{AnyChannel, Channel, Dir, Request, STATE};
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::interrupt::typelevel::Interrupt;
 use crate::{interrupt, pac, Peri};
 

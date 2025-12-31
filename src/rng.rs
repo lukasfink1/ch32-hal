@@ -5,9 +5,9 @@ use core::future::poll_fn;
 use core::marker::PhantomData;
 use core::task::Poll;
 
-use embassy_sync::waitqueue::AtomicWaker;
 use rand_core::{CryptoRng, RngCore};
 
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::interrupt::typelevel::Interrupt;
 use crate::{interrupt, pac, peripherals, Peri};
 

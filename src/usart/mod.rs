@@ -16,12 +16,12 @@ use core::marker::PhantomData;
 use core::sync::atomic::{compiler_fence, Ordering};
 use core::task::Poll;
 
-use embassy_sync::waitqueue::AtomicWaker;
 use futures::future::{select, Either};
 
 use crate::dma::ChannelAndRequest;
 use crate::gpio::{AFType, AnyPin, Pull, SealedPin, Speed};
 use crate::internal::drop::OnDrop;
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::interrupt::typelevel::Interrupt;
 use crate::mode::{Async, Blocking, Mode};
 use crate::time::Hertz;

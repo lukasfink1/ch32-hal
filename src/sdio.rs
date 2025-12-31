@@ -7,12 +7,12 @@ use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::task::Poll;
 
-use embassy_sync::waitqueue::AtomicWaker;
 use sdio_host::{BusWidth, CardCapacity, CardStatus, CurrentState, SDStatus, CID, CSD, OCR, SCR};
 
 use crate::dma::NoDma;
 use crate::gpio::{AFType, AnyPin, SealedPin, Speed};
 use crate::internal::drop::OnDrop;
+use crate::internal::sync::waitqueue::AtomicWaker;
 use crate::interrupt::typelevel::Interrupt;
 use crate::pac::sdio::Sdio as RegBlock;
 use crate::peripheral::RccPeripheral;
@@ -1266,8 +1266,8 @@ foreach_peripheral!(
                 crate::pac::$inst
             }
 
-            fn state() -> &'static ::embassy_sync::waitqueue::AtomicWaker {
-                static WAKER: ::embassy_sync::waitqueue::AtomicWaker = ::embassy_sync::waitqueue::AtomicWaker::new();
+            fn state() -> &'static ::crate::internal::sync::waitqueue::AtomicWaker {
+                static WAKER: ::crate::internal::sync::waitqueue::AtomicWaker = ::embassy_sync::waitqueue::AtomicWaker::new();
                 &WAKER
             }
         }
