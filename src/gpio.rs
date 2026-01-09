@@ -18,7 +18,9 @@ use pac::gpio::vals;
 
 use embassy_hal_internal::PeripheralType;
 
-use crate::{exti, impl_peripheral, pac, peripherals, Peri};
+use crate::{impl_peripheral, pac, peripherals, Peri};
+#[cfg(feature = "exti-interrupt")]
+use crate::exti;
 
 /// Speed, for output mode
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
@@ -588,6 +590,7 @@ pub(crate) trait SealedPin {
 
 #[allow(private_bounds)]
 pub trait Pin: PeripheralType + Into<AnyPin> + SealedPin + Sized + 'static {
+    #[cfg(feature = "exti-interrupt")]
     type ExtiChannel: crate::exti::Channel;
 
     /// Number of the pin within the port (0..31)
@@ -630,7 +633,7 @@ impl AnyPin {
 
 impl_peripheral!(AnyPin);
 impl Pin for AnyPin {
-    #[cfg(exti)]
+    #[cfg(all(exti, feature = "exti-interrupt"))]
     type ExtiChannel = exti::AnyChannel;
 }
 impl SealedPin for AnyPin {
@@ -643,7 +646,7 @@ impl SealedPin for AnyPin {
 foreach_pin!(
     ($pin_name:ident, $port_name:ident, $port_num:expr, $pin_num:expr, $exti_ch:ident) => {
         impl Pin for peripherals::$pin_name {
-            #[cfg(exti)]
+            #[cfg(all(exti, feature = "exti-interrupt"))]
             type ExtiChannel = peripherals::$exti_ch;
         }
 

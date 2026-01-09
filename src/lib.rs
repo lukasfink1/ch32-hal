@@ -100,6 +100,7 @@ pub mod dma;
 pub mod adc;
 #[cfg(dac)]
 pub mod dac;
+#[cfg(feature = "exti-interrupt")]
 pub mod exti;
 pub mod gpio;
 #[cfg(i2c)]
@@ -184,6 +185,7 @@ pub fn init(config: Config) -> Peripherals {
     ::critical_section::with(|cs| unsafe {
         gpio::init(cs);
         dma::init(cs, config.dma_interrupt_priority);
+        #[cfg(feature = "exti-interrupt")]
         exti::init(cs);
     });
 
