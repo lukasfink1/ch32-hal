@@ -152,6 +152,7 @@ pub use crate::_generated::interrupt;
 
 pub struct Config {
     pub rcc: rcc::Config,
+    #[cfg(feature = "dma-interrupt")]
     pub dma_interrupt_priority: interrupt::Priority,
 }
 
@@ -159,6 +160,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             rcc: Default::default(),
+            #[cfg(feature = "dma-interrupt")]
             dma_interrupt_priority: interrupt::Priority::P0,
         }
     }
@@ -184,6 +186,7 @@ pub fn init(config: Config) -> Peripherals {
 
     ::critical_section::with(|cs| unsafe {
         gpio::init(cs);
+        #[cfg(feature = "dma-interrupt")]
         dma::init(cs, config.dma_interrupt_priority);
         #[cfg(feature = "exti-interrupt")]
         exti::init(cs);
