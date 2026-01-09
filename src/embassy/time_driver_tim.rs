@@ -152,13 +152,17 @@ pub(crate) struct RtcDriver {
     // Number of 2^15 periods elapsed since boot.
     period: AtomicU32,
     // Timestamp at which to fire alarm. u64::MAX if no alarm is scheduled.
+    #[cfg(feature = "use-wakers")]
     alarm: Mutex<CriticalSectionRawMutex, AlarmState>,
+    #[cfg(feature = "use-wakers")]
     queue: Mutex<CriticalSectionRawMutex, RefCell<Queue>>,
 }
 
 embassy_time_driver::time_driver_impl!(static DRIVER: RtcDriver = RtcDriver {
     period: AtomicU32::new(0),
+    #[cfg(feature = "use-wakers")]
     alarm: Mutex::const_new(CriticalSectionRawMutex::new(), AlarmState::new()),
+    #[cfg(feature = "use-wakers")]
     queue: Mutex::new(RefCell::new(Queue::new()))
 });
 
@@ -312,6 +316,7 @@ impl Driver for RtcDriver {
         calc_now(period, counter)
     }
 
+    #[cfg(feature = "use-wakers")]
     fn schedule_wake(&self, at: u64, waker: &core::task::Waker) {
         critical_section::with(|cs| {
             let mut queue = self.queue.borrow(cs).borrow_mut();
@@ -324,6 +329,9 @@ impl Driver for RtcDriver {
             }
         })
     }
+
+    #[cfg(feature = "use-wakers")]
+    fn schedule_wake(&self, _at: u64, _waker: &core::task::Waker) {}
 }
 
 pub(crate) fn init(cs: CriticalSection) {
